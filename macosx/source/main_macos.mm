@@ -3,6 +3,7 @@
 
 #include "main.h"
 #include "clock.cpp"
+#include "window.mm"
 
 #include <fcntl.h>
 #include <stdlib.h>
@@ -84,25 +85,10 @@ void DrawBufferToWindow(NSWindow* window, FrameBuffer& framebuffer)
 }
 
 
-@interface MainWindowDelegate: NSObject<NSWindowDelegate>
-@end
-
-@implementation MainWindowDelegate
-- (void)windowWillClose:(id)sender
-{
-    running = false;
-}
-- (void)windowDidResize:(NSNotification *)notification
-{
-    NSWindow* window = (NSWindow*)notification.object;
-    ResizeBuffer(window, framebuffer);
-    DrawBufferToWindow(window, framebuffer);
-}
-@end
-
-
 void HandleEvents()
 {
+    NSCAssert([NSThread isMainThread], @"Processing Application events must occur on main thread.");
+
     while (NSEvent* event = [NSApp nextEventMatchingMask: NSEventMaskAny
                                    untilDate: nil
                                       inMode: NSDefaultRunLoopMode
@@ -121,13 +107,13 @@ void HandleEvents()
                     NSLog(@"Pressed w");
                 else if ([event.characters isEqualToString:@"s"])
                     NSLog(@"Pressed s");
-                else if (event.keyCode == 53)  // Escape
+                if (event.keyCode == 53)  // Escape
                     running = false;
-                break;
             case NSEventTypeLeftMouseDown:
                 break;
 
         }
+
         // Dispatch to window.
         [NSApp sendEvent: event];
     }
@@ -230,41 +216,6 @@ bool CheckForFileEvents(FileEventMonitor monitor)
     return false;
 }
 
-
-NSWindow* CreateWindow(int width, int height)
-{
-    MainWindowDelegate* main_window_delegate = [[MainWindowDelegate alloc] init];
-
-    // Create's a rectangle corresponding to the actual screen.
-    NSRect screen_area = [[NSScreen mainScreen] frame];
-
-    int x = screen_area.size.width  - width;
-    int y = screen_area.size.height - height;
-
-    NSRect initial_frame = NSMakeRect(x, y, width, height);
-
-
-    unsigned flags = NSWindowStyleMaskTitled   |
-                     NSWindowStyleMaskClosable |
-                     NSWindowStyleMaskMiniaturizable |
-                     NSWindowStyleMaskResizable;
-
-    NSWindow* window = [[NSWindow alloc]
-            initWithContentRect : initial_frame
-                      styleMask : flags
-                        backing : NSBackingStoreBuffered
-                          defer : NO];
-
-
-    [NSApp activateIgnoringOtherApps:YES];
-    [window setBackgroundColor: NSColor.blackColor];
-    [window setTitle: @"Yay!!"];
-    [window setDelegate: main_window_delegate];
-    [window makeKeyAndOrderFront:NSApp];          // Display the window (make it a 'key window').
-    window.contentView.wantsLayer = YES;
-
-    return window;
-}
 
 
 // ---- AUDIO START -----
@@ -440,6 +391,7 @@ int main(int argc, char* argv[])
     static int DEFAULT_WIDTH  = 512;
     static int DEFAULT_HEIGHT = 512;
 
+    InitializeWindow();
     NSWindow* window = CreateWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     // ---- WINDOW END ----
     // ---- AUDIO START -----

@@ -2,4 +2,6 @@
 .DS_Store
 cmake-build-debug/
 reference/
+build/
+macosx/build/
 
