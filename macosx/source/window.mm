@@ -34,14 +34,15 @@
 }
 
 
-// Empty implementations here so that the window doesn't complain when the events aren't handled or passed on to its view.
+// Empty implementations here so that the window doesn't complain (play the system
+// beep error sound) when the events aren't handled or passed on to its view.
 // i.e. A traditional Cocoa app expects to pass events on to its view(s).
-- (void)keyDown:(NSEvent *)theEvent {}
-- (void)keyUp:(NSEvent *)theEvent {}
+- (void)keyDown :(NSEvent *)event { NSLog(@"keyDown"); }
+- (void)keyUp   :(NSEvent *)event { NSLog(@"keyUp  "); }
 
 - (BOOL)acceptsFirstResponder { return YES; }
-- (BOOL)canBecomeKeyWindow { return YES; }
-- (BOOL)canBecomeMainWindow { return YES; }
+- (BOOL)canBecomeKeyWindow    { return YES; }
+- (BOOL)canBecomeMainWindow   { return YES; }
 
 @end
 

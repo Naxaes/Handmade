@@ -11,23 +11,62 @@ struct GameState
     bool increase;
     f32 theta;
     f32 alpha;
+
+    s32 x;
+    s32 y;
 };
 
-void Update(Memory& memory, FrameBuffer& framebuffer, Key key)
+void DrawRectangle(FrameBuffer& framebuffer, s32 left, s32 top, s32 right, s32 bottom)
 {
-    GameState* state;
+    if (left < 0) left = 0;
+    if (top  < 0) top  = 0;
+    if (right  >= framebuffer.width)  right  = framebuffer.width;
+    if (bottom >= framebuffer.height) bottom = framebuffer.height;
+
+    for (u16 y = top; y < bottom; ++y)
+    {
+        for (u16 x = left; x < right; ++x)
+        {
+            Pixel& pixel = framebuffer.pixels[y * framebuffer.width + x];
+
+            pixel.r = 255;
+            pixel.g = 255;
+            pixel.b = 0;
+            pixel.a = 255;
+        }
+    }
+}
+
+
+void Update(Memory& memory, FrameBuffer& framebuffer, KeyBoard keyboard)
+{
+    GameState* state = static_cast<GameState*>(memory.persistent.data);
 
     if (!memory.initialized)
     {
-        state = static_cast<GameState*>(memory.persistent.data);
         state->offset = 0;
         state->increase = true;
         state->theta = 0;
         state->alpha = 0;
+        state->x = 0;
+        state->y = 0;
         memory.initialized = true;
     }
 
-    state = static_cast<GameState*>(memory.persistent.data);
+    for (u16 i = 0; i < keyboard.used; ++i)
+    {
+        Key& key = keyboard.keys[i];
+        int speed = 10;
+        if (key.character == 'a')
+            state->x -= speed;
+        else if (key.character == 'd')
+            state->x += speed;
+        else if (key.character == 'w')
+            state->y -= speed;
+        else if (key.character == 's')
+            state->y += speed;
+    }
+
     if (state->offset >= 255)
         state->increase = false;
     if (state->offset <= 0)
@@ -38,6 +77,7 @@ void Update(Memory& memory, FrameBuffer& framebuffer, Key key)
     else
         --state->offset;
 
+    // Fill screen
     for (int y = 0; y < framebuffer.height; ++y)
     {
         for(int x = 0; x < framebuffer.width ; ++x)
@@ -51,6 +91,9 @@ void Update(Memory& memory, FrameBuffer& framebuffer, Key key)
             pixel.a = 255;
         }
     }
+
+    // Draw rectangle
+    DrawRectangle(framebuffer, 20+state->x, 20+state->y, 100+state->x, 100+state->y);
 }
 
 

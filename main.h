@@ -86,9 +86,15 @@ struct SoundBuffer
 
 struct Key
 {
-    s32  value;
+    s8   character;
     s32  transitions;
     bool ended_on_down;
+};
+
+struct KeyBoard
+{
+    u16 used;
+    Key keys[128];
 };
 
 
@@ -102,7 +108,7 @@ typedef void (*name##Function)(__VA_ARGS__);                                \
 void DEFAULT_##name(__VA_ARGS__) {}                                         \
 
 
-EXPORT_FUNCTION(Update, Memory&, FrameBuffer&, Key);
+EXPORT_FUNCTION(Update, Memory&, FrameBuffer&, KeyBoard);
 EXPORT_FUNCTION(Sound,  Memory&, SoundBuffer&);
 
 

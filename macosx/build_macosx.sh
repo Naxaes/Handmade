@@ -126,7 +126,7 @@ elif [[ "$1" = "app" ]]; then
 		echo "Cannot update. Missing build file";
 	fi
 elif [[ "$1" = "all" ]]; then
-	rm -r build
+	rm -r build	      > /dev/null
 	mkdir -p ./build  > /dev/null
 	pushd    ./build  > /dev/null
 
