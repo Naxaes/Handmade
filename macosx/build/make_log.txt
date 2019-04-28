@@ -1,0 +1,8 @@
+rm -rf Main.app
+mkdir  Main.app
+mkdir  Main.app/Contents
+mkdir  Main.app/Contents/MacOS
+mkdir  Main.app/Contents/Resources
+cp ../appdata/Info.plist Main.app/Contents/
+cp ../appdata/Main.icns Main.app/Contents/Resources/
+cp main Main.app/Contents/MacOS/Main
