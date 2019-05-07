@@ -14,7 +14,7 @@ SHARED_LINKER_FLAGS=""
 MACOS_PLATFORM_COMPILER_FLAGS="-fno-threadsafe-statics"
 MACOS_PLATFORM_LINKER_FLAGS="-framework AppKit -framework AudioToolbox"
 MACOS_PLATFORM_OUTPUT_FILE="main"
-MACOS_PLATFORM_SOURCE_FILES="../source/main_macos.mm"
+MACOS_PLATFORM_SOURCE_FILES="../source/osx_main.mm"
 
 GAME_COMPILER_FLAGS="-dynamiclib -current_version 1.0 -compatibility_version 1.0 -fvisibility=hidden"
 GAME_LINKER_FLAGS=""
@@ -24,10 +24,6 @@ GAME_SOURCE_FILES="../../main.cpp"
 APP_MAKEFILE='
 APPNAME=Main
 APPBUNDLE=$(APPNAME).app
-APPBUNDLECONTENTS=$(APPBUNDLE)/Contents
-APPBUNDLEEXE=$(APPBUNDLECONTENTS)/MacOS
-APPBUNDLERESOURCES=$(APPBUNDLECONTENTS)/Resources
-APPBUNDLEICON=$(APPBUNDLECONTENTS)/Resources
 EXECUTABLE=main
 
 appbundle: ../appdata/$(APPNAME).icns
@@ -36,9 +32,10 @@ appbundle: ../appdata/$(APPNAME).icns
 	mkdir  $(APPBUNDLE)/Contents
 	mkdir  $(APPBUNDLE)/Contents/MacOS
 	mkdir  $(APPBUNDLE)/Contents/Resources
-	cp ../appdata/Info.plist $(APPBUNDLECONTENTS)/
-	cp ../appdata/$(APPNAME).icns $(APPBUNDLEICON)/
-	cp $(EXECUTABLE) $(APPBUNDLEEXE)/$(APPNAME)
+	cp ../appdata/Info.plist 		 $(APPBUNDLE)/Contents/
+	cp ../appdata/PkgInfo 			 $(APPBUNDLE)/Contents/
+	cp ../appdata/$(APPNAME).icns 	 $(APPBUNDLE)/Contents/Resources/
+	cp $(EXECUTABLE) 				 $(APPBUNDLE)/Contents/MacOS/$(APPNAME)
 
 ../appdata/$(APPNAME).icns: ../appdata/$(APPNAME)Icon.png
 	rm -rf ../appdata/$(APPNAME).iconset

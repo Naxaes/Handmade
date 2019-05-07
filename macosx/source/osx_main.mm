@@ -10,15 +10,15 @@
 // #include <errno.h>
 
 
-// #include <fcntl.h>
-// #include <unistd.h>
+// https://clang.llvm.org/docs/LanguageExtensions.html#introduction
 
 
 
 // Memory
-#define KILOBYTES(x) (         (x) * 1024)
-#define MEGABYTES(x) (KILOBYTES(x) * 1024)
-#define GIGABYTES(x) (GIGABYTES(x) * 1024)
+#define KILOBYTES(x) (         (x) * 1024ULL)
+#define MEGABYTES(x) (KILOBYTES(x) * 1024ULL)
+#define GIGABYTES(x) (MEGABYTES(x) * 1024ULL)
+#define TERABYTES(x) (GIGABYTES(x) * 1024ULL)
 
 // NOTE(ted): Mac OSX uses bottom-up coordinate system.
 
@@ -45,25 +45,94 @@ static KeyBoard keyboard;
 
 
 
+
+void BubbleSort(u64* array, u64 count)
+{
+    for (u64 i = 0; i < count; ++i)
+    {
+        for (u64 j = i+1; j < count; ++j)
+        {
+            if (array[i] > array[j])
+            {
+                u64 temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+        }
+    }
+}
+
+
+// https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/Articles/MemoryAlloc.html#//apple_ref/doc/uid/20001881-CJBCFDGA
+u8* AllocateVirtualMemory(vm_offset_t size)
+{
+    // In debug builds, check that we have
+    // correct VM page alignment
+    ASSERT(size != 0, "Cannot allocate 0 bytes.\n");
+    ASSERT((size % 4096) == 0, "You should allocate so you're page aligned (i.e. allocates a multiple of 4096). Tried allocating %llu bytes.\n", size);
+
+    // https://www.gnu.org/software/hurd/gnumach-doc/Memory-Allocation.html
+    vm_address_t address = TERABYTES(2);
+    kern_return_t error = vm_allocate((vm_map_t) mach_task_self(), &address, size, false);
+
+    if (error != KERN_SUCCESS)
+    {
+        if (error == KERN_INVALID_ADDRESS)
+            ERROR("Address %llu is invalid.\n", address);
+        if (error == KERN_NO_SPACE)
+            ERROR("Not enough space to allocate %llu bytes at the specified address %llu.\n", size, address);
+    }
+
+
+    // // Switched to mmap: https://hero.handmade.network/forums/code-discussion/t/134-mac_os_x_vm_allocate_vs_win__virtualalloc
+    // u8* address = (u8*)GIGABYTES(8lu); // Make this somewhere above 4GB
+    // void* data = mmap(address, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANON, -1, 0);
+    // if (data == MAP_FAILED)
+    //     ERROR("'mmap' failed. Error code: %d. Message: %s\n", errno, strerror(errno));
+
+    return (u8*)address;
+}
+
+void PrintStatus(u64* frame_time_results, u8 frame_time_result_count,
+                 u64* cycle_results,      u8 cycle_result_count,
+                 u8   frames)
+{
+    BubbleSort(frame_time_results, frame_time_result_count);
+    BubbleSort(cycle_results,      cycle_result_count);
+
+    u64 i = frame_time_result_count - 1;
+    u64 j = cycle_result_count - 1;
+    NSLog(@"---- FRAME STATS ----\n"
+          "\tFrames per second : %i\n"
+          "\tNanos  per frame  : %llu | %llu | %llu | %llu | %llu\n"
+          "\tCycles per second : %llu | %llu | %llu | %llu | %llu\n",
+          frames,
+          frame_time_results[0], frame_time_results[i/4], frame_time_results[i/2], frame_time_results[3*i/4], frame_time_results[i],
+          cycle_results[0], cycle_results[j/4], cycle_results[j/2], cycle_results[3*j/4], cycle_results[j]
+    );
+}
+
+
 int main(int argc, char* argv[])
 {
     {
-        u64 total_size = KILOBYTES(1);
-        void* raw_memory = malloc(total_size);
+        // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/calloc.3.html
+        u64 total_size = KILOBYTES(4);
+        u8* raw_virtual_memory = AllocateVirtualMemory(total_size);
 
         Buffer persistent;
         persistent.size = total_size / 2;
         persistent.used = 0;
-        persistent.data = raw_memory;
+        persistent.data = raw_virtual_memory;
 
         Buffer temporary;
         temporary.size = total_size / 2;
         temporary.used = 0;
-        temporary.data = static_cast<char*>(raw_memory) + persistent.size;
+        temporary.data = raw_virtual_memory + persistent.size;
 
-        memory.initialized = false;
         memory.persistent  = persistent;
         memory.temporary   = temporary;
+        memory.initialized = false;
     }
 
     const char* dll_path = GetDLLByExecutable("libGame.A.dylib");
@@ -77,34 +146,46 @@ int main(int argc, char* argv[])
     // ---- WINDOW START ----
     static int DEFAULT_WIDTH  = 512;
     static int DEFAULT_HEIGHT = 512;
-
-    InitializeWindow();
     NSWindow* window = CreateWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    ResizeBuffer(window, framebuffer);
     // ---- WINDOW END ----
+
     // ---- AUDIO START -----
     AudioQueueRef audio_queue = SetupAudioQueue();
     // ---- AUDIO END -----
 
-    ResizeBuffer(window, framebuffer);
 
     NanoClock clock;
     NanoClock frame_clock;
 
+    u8  frame_time_result_count = 0;
+    u64 frame_time_results[255];
+
+    u8  cycle_result_count = 0;
+    u64 cycle_results[255];
+
     int frames = 0;
     while (running)
     {
+        u64 start = CycleCount();
+
         keyboard.used = 0;
+
 
         // ---- FRAME COUNT ----
         if (Timer(frame_clock, SECONDS_TO_NANO(1)))
         {
-            NSLog(@"Frames: %i", frames);
+            PrintStatus(frame_time_results, frame_time_result_count, cycle_results, cycle_result_count, frames);
+
             frames = 0;
+            cycle_result_count = 0;
+            frame_time_result_count = 0;
         }
         ++frames;
 
         // ---- SLEEP ----
-        uint64_t delta = Tick(clock, MILLI_TO_NANO(32));
+        uint64_t delta = Tick(clock/*, MILLI_TO_NANO(32) */);
+        frame_time_results[frame_time_result_count++] = delta;
 
         // ---- EVENTS ----
         HandleEvents(keyboard);
@@ -125,8 +206,12 @@ int main(int argc, char* argv[])
         // }
 
         // ---- RENDERING ----
+
         game.update(memory, framebuffer, keyboard);
         DrawBufferToWindow(window, framebuffer);
+
+        u64 stop = CycleCount();
+        cycle_results[cycle_result_count++] = stop - start;
     }
 
 }

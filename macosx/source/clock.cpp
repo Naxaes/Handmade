@@ -87,3 +87,12 @@ bool Timer(NanoClock& clock, u64 time)
     return false;
 }
 
+
+u64 CycleCount()
+{
+#if __has_builtin(__builtin_readcyclecounter)
+    return __builtin_readcyclecounter();
+#else
+    ERROR("Not supported!");
+#endif
+}

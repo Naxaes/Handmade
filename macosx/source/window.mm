@@ -128,3 +128,106 @@ NSWindow* CreateWindow(int width, int height)
     return window;
 }
 
+
+
+void HandleEvents(KeyBoard& keyboard)
+{
+    NSCAssert([NSThread isMainThread], @"Processing Application events must occur on main thread.");
+
+    while (NSEvent* event = [NSApp nextEventMatchingMask: NSEventMaskAny
+                                               untilDate: nil
+                                                  inMode: NSDefaultRunLoopMode
+                                                 dequeue: YES])
+    {
+
+        // https://developer.apple.com/documentation/appkit/nsevent/eventtype
+        switch ([event type])
+        {
+            case NSEventTypeKeyDown:
+                if ([event.characters isEqualToString:@"a"])
+                {
+                    Key& key = keyboard.keys[keyboard.used++];
+                    key.character     = 'a';
+                    key.transitions   = 0;
+                    key.ended_on_down = true;
+                }
+                else if ([event.characters isEqualToString:@"d"])
+                {
+                    Key& key = keyboard.keys[keyboard.used++];
+                    key.character     = 'd';
+                    key.transitions   = 0;
+                    key.ended_on_down = true;
+                }
+                else if ([event.characters isEqualToString:@"w"])
+                {
+                    Key& key = keyboard.keys[keyboard.used++];
+                    key.character     = 'w';
+                    key.transitions   = 0;
+                    key.ended_on_down = true;
+                }
+                else if ([event.characters isEqualToString:@"s"])
+                {
+                    Key& key = keyboard.keys[keyboard.used++];
+                    key.character     = 's';
+                    key.transitions   = 0;
+                    key.ended_on_down = true;
+                }
+                if (event.keyCode == 53)  // Escape
+                {
+                    running = false;
+                }
+                break;
+            default:
+                // Dispatch to window.
+                [NSApp sendEvent: event];
+        }
+    }
+}
+
+
+void ResizeBuffer(NSWindow* window, FrameBuffer& framebuffer)
+{
+    // TODO(ted): I see no need to deallocate if the buffer gets smaller, as memory is cheap.
+    // Maybe we should allocate a large enough buffer to support the max size. It'll waste memory,
+    // but we won't have to free and reallocate all the time.
+
+    if (framebuffer.pixels)
+    {
+        free(framebuffer.pixels);
+    }
+
+    framebuffer.width  = window.contentView.bounds.size.width;
+    framebuffer.height = window.contentView.bounds.size.height;
+    framebuffer.pixels = cast(malloc(framebuffer.width * framebuffer.height * sizeof(Pixel)), Pixel*);
+}
+
+
+void DrawBufferToWindow(NSWindow* window, FrameBuffer& framebuffer)
+{
+    ASSERT(sizeof(Pixel) == 4, "sizeof(Pixel) is %lu\n", sizeof(Pixel));
+
+    u8* data = reinterpret_cast<u8*>(framebuffer.pixels);
+
+    NSBitmapImageRep* representation = [
+            [NSBitmapImageRep alloc]
+            initWithBitmapDataPlanes: &data
+                          pixelsWide: framebuffer.width
+                          pixelsHigh: framebuffer.height
+                       bitsPerSample: 8              // Amount of bits for one channel in one pixel.
+                     samplesPerPixel: 4              // Amount of channels.
+                            hasAlpha: YES
+                            isPlanar: NO             // Single buffer to represent the entire image (mixed mode).
+                      colorSpaceName: NSDeviceRGBColorSpace
+                         bytesPerRow: framebuffer.width * sizeof(Pixel)
+                        bitsPerPixel: 32
+    ];
+
+    NSSize   size  = NSMakeSize(framebuffer.width, framebuffer.height);
+    NSImage* image = [[NSImage alloc] initWithSize: size];
+    [image addRepresentation: representation];
+    window.contentView.layer.contents = image;
+
+    // TODO(ted): Pre-allocate these.
+    [representation release];
+    [image release];
+}
