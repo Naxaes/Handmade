@@ -6,27 +6,31 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define ERROR(...)                                                                             \
+// FIX(ted): THIS PRESUMABLY ONLY WORKS ON UNIX. FIX!
+#include <signal.h>    // raise(SIGINT)
+
+
+#define ERROR(...)                                                                                      \
 {                                                                                                       \
     char buffer[255];                                                                                   \
-    sprintf(buffer, __VA_ARGS__);                                                              \
+    sprintf(buffer, __VA_ARGS__);                                                                       \
     fprintf(stderr, "[Error]:\n\tFile: %s\n\tLine: %i\n\tMessage: %s", __FILE__, __LINE__, buffer);     \
 }
-#define ERROR_ONCE(...)                                                                        \
+#define ERROR_ONCE(...)                                                                                 \
 {                                                                                                       \
     static bool reported = false;                                                                       \
     if (!reported)                                                                                      \
-        ERROR(__VA_ARGS__);                                                                    \
+        ERROR(__VA_ARGS__);                                                                             \
     reported = true;                                                                                    \
 }
-#define ASSERT(status, ...)                                                                                  \
+#define ASSERT(status, ...)                                                                                           \
 {                                                                                                                     \
     if (!(status))                                                                                                    \
     {                                                                                                                 \
         char buffer[255];                                                                                             \
-        sprintf(buffer, __VA_ARGS__);                                                                        \
-        fprintf(stderr, "[Assertion failed]:\n\tCondition: "#status"\n\tFile: %s\n\tLine: %i\n\tMessage: %s", __FILE__, __LINE__, buffer);    \
-        exit(-1);                                                                                                     \
+        sprintf(buffer, __VA_ARGS__);                                                                                 \
+        fprintf(stderr, "[Assertion failed]:\n\tCondition: %s\n\tFile: %s\n\tLine: %i\n\tMessage: %s", #status, __FILE__, __LINE__, buffer);    \
+        raise(SIGINT);                                                                                                \
     }                                                                                                                 \
 }
 
@@ -48,6 +52,30 @@ typedef float  f32;
 typedef double f64;
 
 
+struct Allocator
+{
+    u64 capacity;
+    u64 memory_allocated;
+    void* memory;
+};
+void* Allocate(Allocator& allocater, u64 size) {}
+void  Free(Allocator& allocater, void* memory) {}
+
+struct Logger
+{
+    u8*   file;
+    u8*   function;
+    u32   line;
+    FILE* file;
+};
+
+struct Context
+{
+    Allocator& allocator;
+    Logger&    logger;
+};
+
+
 struct Buffer
 {
     u32   size;  // Maximum 4GB
@@ -58,9 +86,9 @@ struct Buffer
 
 struct Memory
 {
-    bool   initialized;
     Buffer persistent;
     Buffer temporary;
+    bool   initialized;
 };
 
 
@@ -77,6 +105,7 @@ struct FrameBuffer
     Pixel* pixels;
 };
 
+struct Sample { s16 left; s16 right; };
 struct SoundBuffer
 {
     s32  size;
@@ -108,6 +137,7 @@ typedef void (*name##Function)(__VA_ARGS__);                                \
 void DEFAULT_##name(__VA_ARGS__) {}                                         \
 
 
+EXPORT_FUNCTION(Initialize, Memory&);
 EXPORT_FUNCTION(Update, Memory&, FrameBuffer&, KeyBoard);
 EXPORT_FUNCTION(Sound,  Memory&, SoundBuffer&);
 
