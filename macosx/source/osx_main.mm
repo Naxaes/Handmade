@@ -24,8 +24,9 @@
 
 struct Game
 {
-    UpdateFunction update;
-    SoundFunction  sound;
+    InitializeFunction initialize;
+    UpdateFunction     update;
+    SoundFunction      sound;
 };
 static Game game;
 static Memory memory;
@@ -72,8 +73,8 @@ u8* AllocateVirtualMemory(vm_offset_t size)
     ASSERT((size % 4096) == 0, "You should allocate so you're page aligned (i.e. allocates a multiple of 4096). Tried allocating %llu bytes.\n", size);
 
     // https://www.gnu.org/software/hurd/gnumach-doc/Memory-Allocation.html
-    vm_address_t address = TERABYTES(2);
-    kern_return_t error = vm_allocate((vm_map_t) mach_task_self(), &address, size, false);
+    vm_address_t  address = TERABYTES(2);
+    kern_return_t error   = vm_allocate((vm_map_t) mach_task_self(), &address, size, false);
 
     if (error != KERN_SUCCESS)
     {
@@ -82,6 +83,8 @@ u8* AllocateVirtualMemory(vm_offset_t size)
         if (error == KERN_NO_SPACE)
             ERROR("Not enough space to allocate %llu bytes at the specified address %llu.\n", size, address);
     }
+
+    memset((u8*)address, 0, size);
 
 
     // // Switched to mmap: https://hero.handmade.network/forums/code-discussion/t/134-mac_os_x_vm_allocate_vs_win__virtualalloc
@@ -143,6 +146,8 @@ int main(int argc, char* argv[])
 
     game = TryLoadGame(dll_path);
 
+    game.initialize(memory);
+
     // ---- WINDOW START ----
     static int DEFAULT_WIDTH  = 512;
     static int DEFAULT_HEIGHT = 512;
@@ -170,7 +175,6 @@ int main(int argc, char* argv[])
         u64 start = CycleCount();
 
         keyboard.used = 0;
-
 
         // ---- FRAME COUNT ----
         if (Timer(frame_clock, SECONDS_TO_NANO(1)))

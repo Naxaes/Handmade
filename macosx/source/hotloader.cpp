@@ -50,6 +50,10 @@ Game TryLoadGame(const char* path)
     dll_handle = dlopen(path, RTLD_LOCAL|RTLD_LAZY);
     ASSERT(dll_handle, "Couldn't load dll. %s\n", dlerror());
 
+    game.initialize = reinterpret_cast<InitializeFunction>(LoadDLLFunction(dll_handle, "Initialize"));
+    if (!game.initialize)
+        game.initialize = DEFAULT_Initialize;
+
     game.update = reinterpret_cast<UpdateFunction>(LoadDLLFunction(dll_handle, "Update"));
     if (!game.update)
         game.update = DEFAULT_Update;
