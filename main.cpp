@@ -51,10 +51,8 @@ void DrawRectangle(FrameBuffer& framebuffer, s32 left, s32 top, s32 right, s32 b
 
 void Initialize(Memory& memory)
 {
-    ASSERT(&memory.persistent.data != 0, "Invalid persistent memory.\n");
-    ASSERT(&memory.temporary.data  != 0, "Invalid temporary memory.\n");
-
-    ASSERT(1 == 0, "Test");
+    ASSERT(memory.persistent.data != 0, "Invalid persistent memory.\n");
+    ASSERT(memory.temporary.data  != 0, "Invalid temporary memory.\n");
 
     State* state = cast(memory.persistent.data, State*);
 

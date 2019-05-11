@@ -129,9 +129,18 @@ NSWindow* CreateWindow(int width, int height)
 }
 
 
+void StoreCharacterInKeyboard(KeyBoard& keyboard, char character)
+{
+    Key& key = keyboard.keys[keyboard.used++];
+    key.character     = character;
+    key.transitions   = 0;
+    key.ended_on_down = true;
+}
 
 void HandleEvents(KeyBoard& keyboard)
 {
+    keyboard.used = 0;
+
     NSCAssert([NSThread isMainThread], @"Processing Application events must occur on main thread.");
 
     while (NSEvent* event = [NSApp nextEventMatchingMask: NSEventMaskAny
@@ -145,33 +154,17 @@ void HandleEvents(KeyBoard& keyboard)
         {
             case NSEventTypeKeyDown:
                 if ([event.characters isEqualToString:@"a"])
-                {
-                    Key& key = keyboard.keys[keyboard.used++];
-                    key.character     = 'a';
-                    key.transitions   = 0;
-                    key.ended_on_down = true;
-                }
+                    StoreCharacterInKeyboard(keyboard, 'a');
                 else if ([event.characters isEqualToString:@"d"])
-                {
-                    Key& key = keyboard.keys[keyboard.used++];
-                    key.character     = 'd';
-                    key.transitions   = 0;
-                    key.ended_on_down = true;
-                }
+                    StoreCharacterInKeyboard(keyboard, 'd');
                 else if ([event.characters isEqualToString:@"w"])
-                {
-                    Key& key = keyboard.keys[keyboard.used++];
-                    key.character     = 'w';
-                    key.transitions   = 0;
-                    key.ended_on_down = true;
-                }
+                    StoreCharacterInKeyboard(keyboard, 'w');
                 else if ([event.characters isEqualToString:@"s"])
-                {
-                    Key& key = keyboard.keys[keyboard.used++];
-                    key.character     = 's';
-                    key.transitions   = 0;
-                    key.ended_on_down = true;
-                }
+                    StoreCharacterInKeyboard(keyboard, 's');
+                else if ([event.characters isEqualToString:@","])
+                    StoreCharacterInKeyboard(keyboard, ',');
+                else if ([event.characters isEqualToString:@"."])
+                    StoreCharacterInKeyboard(keyboard, '.');
                 if (event.keyCode == 53)  // Escape
                 {
                     running = false;

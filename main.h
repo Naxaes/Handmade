@@ -52,29 +52,6 @@ typedef float  f32;
 typedef double f64;
 
 
-struct Allocator
-{
-    u64 capacity;
-    u64 memory_allocated;
-    void* memory;
-};
-void* Allocate(Allocator& allocater, u64 size) {}
-void  Free(Allocator& allocater, void* memory) {}
-
-struct Logger
-{
-    u8*   file;
-    u8*   function;
-    u32   line;
-    FILE* file;
-};
-
-struct Context
-{
-    Allocator& allocator;
-    Logger&    logger;
-};
-
 
 struct Buffer
 {

@@ -1,7 +1,7 @@
 #include <mach-o/dyld.h>  // _NSGetExecutablePath
 #include <dlfcn.h>        // dlsym, dlerror, RTLD_LOCAL, RTLD_LAZY
 
-const char* GetDLLByExecutable(const char* name)
+const char* GetNameByExecutable(const char* name)
 {
     u16 dll_name_size = strlen(name) + 1;
     u16 max_size = MAXPATHLEN + dll_name_size;
