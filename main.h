@@ -54,6 +54,10 @@ typedef float  f32;
 typedef double f64;
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> fc6b597855445692f742e24e79b0e38716c7c25f
 struct Buffer
 {
     u32   size;  // Maximum 4GB
