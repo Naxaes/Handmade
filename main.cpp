@@ -34,9 +34,9 @@ void DrawRectangle(FrameBuffer& framebuffer, s32 left, s32 top, s32 right, s32 b
     if (right  >= framebuffer.width)  right  = framebuffer.width;
     if (bottom >= framebuffer.height) bottom = framebuffer.height;
 
-    for (u16 y = top; y < bottom; ++y)
+    for (u16 y = cast(top, u16); y < cast(bottom, u16); ++y)
     {
-        for (u16 x = left; x < right; ++x)
+        for (u16 x = cast(left, u16); x < cast(right, u16); ++x)
         {
             Pixel& pixel = framebuffer.pixels[y * framebuffer.width + x];
 
@@ -53,8 +53,6 @@ void Initialize(Memory& memory)
 {
     ASSERT(&memory.persistent.data != 0, "Invalid persistent memory.\n");
     ASSERT(&memory.temporary.data  != 0, "Invalid temporary memory.\n");
-
-    ASSERT(1 == 0, "Test");
 
     State* state = cast(memory.persistent.data, State*);
 
@@ -110,7 +108,7 @@ void Update(Memory& memory, FrameBuffer& framebuffer, KeyBoard keyboard)
             Pixel& pixel = framebuffer.pixels[y * framebuffer.width + x];
 
             pixel.r = 0;
-            pixel.g = state.offset;
+            pixel.g = cast(state.offset, u8);
             pixel.b = 0;
             pixel.a = 255;
         }
@@ -133,12 +131,12 @@ void Sound(Memory& memory, SoundBuffer& buffer)
         buffer.data[left]  = cast(sin(state.theta) * 32767.0f, s16);
         buffer.data[right] = cast(sin(state.alpha) * 32767.0f, s16);
 
-        state.theta += 2.0 * M_PI * left_tone  / 44100;
-        state.alpha += 2.0 * M_PI * right_tone / 44100;
-        if (state.theta > 2.0 * M_PI)
-            state.theta -= 2.0 * M_PI;
-        if (state.alpha > 2.0 * M_PI)
-            state.alpha -= 2.0 * M_PI;
+        state.theta += 2.0f * PI32 * left_tone  / 44100;
+        state.alpha += 2.0f * PI32 * right_tone / 44100;
+        if (state.theta > 2.0f * PI32)
+            state.theta -= 2.0f * PI32;
+        if (state.alpha > 2.0f * PI32)
+            state.alpha -= 2.0f * PI32;
     }
 }
 
