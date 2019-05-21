@@ -34,9 +34,9 @@ void DrawRectangle(FrameBuffer& framebuffer, s32 left, s32 top, s32 right, s32 b
     if (right  >= framebuffer.width)  right  = framebuffer.width;
     if (bottom >= framebuffer.height) bottom = framebuffer.height;
 
-    for (u16 y = top; y < bottom; ++y)
+    for (s32 y = top; y < bottom; ++y)
     {
-        for (u16 x = left; x < right; ++x)
+        for (s32 x = left; x < right; ++x)
         {
             Pixel& pixel = framebuffer.pixels[y * framebuffer.width + x];
 
@@ -71,7 +71,7 @@ void Initialize(Memory& memory)
     }
 }
 
-void Update(Memory& memory, FrameBuffer& framebuffer, KeyBoard keyboard)
+void Update(Memory& memory, FrameBuffer& framebuffer, KeyBoard& keyboard)
 {
     GameState& state = cast(memory.persistent.data, State*)->game;
 
