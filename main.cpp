@@ -51,13 +51,8 @@ void DrawRectangle(FrameBuffer& framebuffer, s32 left, s32 top, s32 right, s32 b
 
 void Initialize(Memory& memory)
 {
-<<<<<<< HEAD
-    ASSERT(&memory.persistent.data != 0, "Invalid persistent memory.\n");
-    ASSERT(&memory.temporary.data  != 0, "Invalid temporary memory.\n");
-=======
     ASSERT(memory.persistent.data != 0, "Invalid persistent memory.\n");
     ASSERT(memory.temporary.data  != 0, "Invalid temporary memory.\n");
->>>>>>> fc6b597855445692f742e24e79b0e38716c7c25f
 
     State* state = cast(memory.persistent.data, State*);
 
@@ -76,7 +71,7 @@ void Initialize(Memory& memory)
     }
 }
 
-void Update(Memory& memory, FrameBuffer& framebuffer, KeyBoard keyboard)
+void Update(Memory& memory, FrameBuffer& framebuffer, KeyBoard& keyboard)
 {
     GameState& state = cast(memory.persistent.data, State*)->game;
 

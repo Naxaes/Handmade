@@ -54,10 +54,6 @@ typedef float  f32;
 typedef double f64;
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> fc6b597855445692f742e24e79b0e38716c7c25f
 struct Buffer
 {
     u32   size;  // Maximum 4GB
@@ -124,7 +120,7 @@ void DEFAULT_##name(__VA_ARGS__) {}                                         \
 
 #elif defined(_WIN32) || defined(_WIN64)
 #define EXPORT_FUNCTION(name, ...)                                          \
-extern "C" __declspec(dllexport) void name(__VA_ARGS__);                                   \
+extern "C" __declspec(dllexport) void name(__VA_ARGS__);                    \
 typedef void (*name##Function)(__VA_ARGS__);                                \
 void DEFAULT_##name(__VA_ARGS__) {}                                         \
 

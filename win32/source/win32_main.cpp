@@ -1,13 +1,8 @@
-#include <main.h>
+#include "main.h"
 
 #include <windows.h>
 #include <xinput.h>
 #include <dsound.h>
-
-using uint8  = uint8_t;
-using uint16 = uint16_t;
-using uint32 = uint32_t;
-using uint64 = uint64_t;
 
 
 struct Win32FrameBuffer
@@ -116,18 +111,20 @@ LRESULT CALLBACK Win32EventCallback(HWND window, UINT message, WPARAM wParam, LP
 }
 
 
-void Win32LoadGame()
+void Win32LoadGame(Win32Game& game)
 {
-	HMODULE game_handle = LoadLibrary(L"game.dll");
+	HMODULE game_handle = LoadLibrary(L"main.dll");
 	if (!game_handle)
-		REPORT_ERROR("Couldn't load game!")
+		REPORT_ERROR("Couldn't load game!\n")
 
-	win32_game.initialize = (InitializeFunction) GetProcAddress(game_handle, "Initialize");
-	win32_game.update     = (UpdateFunction)     GetProcAddress(game_handle, "Update");
-	win32_game.sound      = (SoundFunction)      GetProcAddress(game_handle, "Sound");
+	game.initialize = (InitializeFunction) GetProcAddress(game_handle, "Initialize");
+	game.update     = (UpdateFunction)     GetProcAddress(game_handle, "Update");
+	game.sound      = (SoundFunction)      GetProcAddress(game_handle, "Sound");
 
-	if (!win32_game.initialize || !win32_game.update || !win32_game.sound)
-		REPORT_ERROR("BADF")
+	if (!game.initialize || !game.update || !game.sound)
+		REPORT_ERROR("Couldn't load all game functions!\n")
+
+	printf("Loaded game.\n");
 }
 
 
@@ -173,7 +170,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE _, PWSTR command_line_argument
 
     ShowWindow(window, show_code);
 
-    Win32LoadGame();
+    Win32LoadGame(win32_game);
 
 	bool running = true;
 	while (running)
@@ -187,9 +184,31 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE _, PWSTR command_line_argument
 			TranslateMessage(&message);
 			DispatchMessage(&message);
 
-			// win32_game.update();
+
+			Memory memory = {0};
+			memory.persistent.size = 1024;
+			memory.persistent.used = 0;
+			memory.persistent.data = malloc(1024);
+			memory.temporary.size = 1024;
+			memory.temporary.used = 0;
+			memory.temporary.data = malloc(1024);
+    		memory.initialized = false;
+
+			FrameBuffer framebuffer = {0};
+			framebuffer.width  = win32_framebuffer.width;
+			framebuffer.height = win32_framebuffer.height;
+			framebuffer.pixels = (Pixel*)win32_framebuffer.memory;
+
+			KeyBoard keyboard = {0};
+			keyboard.used = 0;
+			keyboard.keys;
+
+			win32_game.update(memory, framebuffer, keyboard);
 
 			Win32UpdateWindow(window, win32_framebuffer);
+
+			free(memory.persistent.data);
+			free(memory.temporary.data);
 		}
 	}
 
