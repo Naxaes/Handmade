@@ -133,7 +133,7 @@ void DEFAULT_##name(__VA_ARGS__) {}                                         \
 
 
 EXPORT_FUNCTION(Initialize, Memory&);
-EXPORT_FUNCTION(Update, Memory&, FrameBuffer&, KeyBoard);
+EXPORT_FUNCTION(Update, Memory&, FrameBuffer&, KeyBoard&);
 EXPORT_FUNCTION(Sound,  Memory&, SoundBuffer&);
 
 

@@ -1,6 +1,31 @@
 #include <mach-o/dyld.h>  // _NSGetExecutablePath
 #include <dlfcn.h>        // dlsym, dlerror, RTLD_LOCAL, RTLD_LAZY
 
+// RESULT MUST BE FREED
+char* GetExecutableDirectory(const char* name)
+{
+    char* path = cast(malloc(MAXPATHLEN), char*);
+
+    u32 size  = MAXPATHLEN;
+    s32 error = _NSGetExecutablePath(path, &size);
+    ASSERT(error != -1, "Buffer too small. %u bytes required, %u given.\n", size, MAXPATHLEN);
+    u32 actual_size = strlen(path) + 1;
+
+
+    // Cut off executable name.
+    for (u16 i = actual_size; i > 0; --i)  // NOTE(ted): Beware of underflow.
+    {
+        if (path[i] == '/')
+        {
+            path[i+1] = '\0';
+            break;
+        }
+    }
+
+    return path;
+}
+
+// RESULT MUST BE FREED
 const char* GetNameByExecutable(const char* name)
 {
     u16 dll_name_size = strlen(name) + 1;

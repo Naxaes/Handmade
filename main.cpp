@@ -34,9 +34,15 @@ void DrawRectangle(FrameBuffer& framebuffer, s32 left, s32 top, s32 right, s32 b
     if (right  >= framebuffer.width)  right  = framebuffer.width;
     if (bottom >= framebuffer.height) bottom = framebuffer.height;
 
+<<<<<<< HEAD
     for (u16 y = cast(top, u16); y < cast(bottom, u16); ++y)
     {
         for (u16 x = cast(left, u16); x < cast(right, u16); ++x)
+=======
+    for (s32 y = top; y < bottom; ++y)
+    {
+        for (s32 x = left; x < right; ++x)
+>>>>>>> 04ec9c00f8d9fab05a7aab0f290cd36d7085f640
         {
             Pixel& pixel = framebuffer.pixels[y * framebuffer.width + x];
 

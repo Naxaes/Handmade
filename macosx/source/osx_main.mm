@@ -56,7 +56,6 @@ static RecordData record_data;
 
 
 
-
 void BubbleSort(u64* array, u64 count)
 {
     for (u64 i = 0; i < count; ++i)
@@ -174,6 +173,11 @@ void LoadGameState(Memory& memory)
     fclose(file);
 }
 
+void StartRecording(Memory& memory)
+{
+    SaveGameState(memory);
+}
+
 void StopRecording(RecordData& record)
 {
     if (record_data.current_frame == 0)  // Already stopped.
@@ -184,14 +188,8 @@ void StopRecording(RecordData& record)
 }
 
 // Returns true if we're still recording.
-bool Record(Memory& memory, RecordData& record, KeyBoard& keyboard)
+bool RecordFrame(Memory& memory, RecordData& record, KeyBoard& keyboard)
 {
-    // Save the current state for the first time.
-    if (record.current_frame == 0)
-    {
-        SaveGameState(memory);
-    }
-
     if (record_data.current_frame >= record_data.max_frames_to_record)
     {
         StopRecording(record);
@@ -229,7 +227,7 @@ int main(int argc, char* argv[])
     {
         // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/calloc.3.html
         u64 total_size = KILOBYTES(4);
-        u8* raw_virtual_memory = AllocateVirtualMemory(total_size);
+        u8* raw_virtual_memory = AllocateVirtualMemory(total_size);  // LEAK(ted): Never freed, as it'll likely live to the end of the program.
 
         Buffer persistent;
         persistent.size = total_size / 2;
@@ -251,12 +249,13 @@ int main(int argc, char* argv[])
     const char* dll_path;
     FileEventMonitor dll_monitor;
     {
-        dll_path = GetNameByExecutable("libGame.A.dylib");
+        dll_path = GetNameByExecutable("libGame.A.dylib");  // LEAK(ted): Making static for now.
         dll_monitor = CreateMonitor(dll_path);
         if (!dll_monitor.queue)
             return 1;
         game = TryLoadGame(dll_path);
     }
+
 
     // ---- INITIALIZE GAME ----
     game.initialize(memory);
@@ -266,14 +265,14 @@ int main(int argc, char* argv[])
     {
         int default_width  = 512;
         int default_height = 512;
-        window = CreateWindow(default_width, default_height);
+        window = CreateWindow(default_width, default_height);  // LEAK(ted): Does the window need to be freed?
         ResizeBuffer(window, framebuffer);
     }
 
     // ---- INITIALIZE AUDIO -----
     AudioQueueRef audio_queue;
     {
-        audio_queue = SetupAudioQueue();
+        audio_queue = SetupAudioQueue();  // LEAK(ted): Does the audio queue need to be freed?
     }
 
 
@@ -292,7 +291,7 @@ int main(int argc, char* argv[])
     bool record_user_input   = false;
     bool playback_user_input = false;
     record_data.max_frames_to_record = 65535;
-    record_data.keyboard_data = cast(malloc(record_data.max_frames_to_record * sizeof(KeyBoard)), KeyBoard*);
+    record_data.keyboard_data = cast(malloc(record_data.max_frames_to_record * sizeof(KeyBoard)), KeyBoard*);  // LEAK(ted): Never freed, as it'll likely live to the end of the program.
     record_data.current_frame = 0;
 
     while (running)
@@ -311,16 +310,16 @@ int main(int argc, char* argv[])
         ++frames;
 
         // ---- SLEEP ----
-        uint64_t delta = Tick(clock/*, MILLI_TO_NANO(32) */);
+        uint64_t delta = Tick(clock, MILLI_TO_NANO(32));
         frame_time_results[frame_time_result_count++] = delta;
 
         // ---- EVENTS ----
         HandleEvents(keyboard);
-        if (CheckForFileEvents(dll_monitor))
-        {
-            game = TryLoadGame(dll_path);
-            dll_monitor = CreateMonitor(dll_path);
-        }
+        // if (CheckForFileEvents(dll_monitor))
+        // {
+        //     game = TryLoadGame(dll_path);
+        //     dll_monitor = CreateMonitor(dll_path);
+        // }
 
 
         // ---- RECORD AND PLAYBACK ----
@@ -333,6 +332,7 @@ int main(int argc, char* argv[])
                     if (!record_user_input)
                     {
                         record_user_input = true;
+                        StartRecording(memory);
                     }
                     else
                     {
@@ -357,7 +357,7 @@ int main(int argc, char* argv[])
 
             if (record_user_input)
             {
-                if (!Record(memory, record_data, keyboard))
+                if (!RecordFrame(memory, record_data, keyboard))
                 {
                     printf("Recording exceeded max capacity. Recording stopped.");
                     record_user_input = false;

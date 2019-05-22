@@ -1,6 +1,19 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVFoundation.h>
 
+
+// https://developer.apple.com/library/archive/documentation/MusicAudio/Conceptual/CoreAudioOverview/WhatisCoreAudio/WhatisCoreAudio.html
+// A sample -
+//      is single numerical value for a single channel.
+// A frame -
+//      is a collection of time-coincident samples. For instance, a stereo sound file has two
+//      samples per frame, one for the left channel and one for the right channel.
+// A packet -
+//      is a collection of one or more contiguous frames. In linear PCM audio, a packet is always
+//      a single frame. In compressed formats, it is typically more. A packet defines the smallest
+//      meaningful set of frames for a given audio data format.
+
+
 // Will be called whenever the audio queue needs more data.
 // https://developer.apple.com/documentation/audiotoolbox/audioqueueoutputcallback
 void AudioQueueCallback(void* user_data, AudioQueueRef audio_queue, AudioQueueBufferRef buffer)
@@ -80,7 +93,7 @@ AudioQueueRef SetupAudioQueue()
     //     - capacity (in bytes)
     //     - buffer (output parameter
 
-    for (u8 buffer_index = 0; buffer_index < 2; ++buffer_index)
+    for (u8 buffer_index = 0; buffer_index < 3; ++buffer_index)
     {
         AudioQueueBufferRef buffer;
         error = AudioQueueAllocateBuffer(audio_queue, KILOBYTES(16), &buffer);
