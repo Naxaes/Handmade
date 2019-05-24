@@ -13,13 +13,6 @@
 // https://clang.llvm.org/docs/LanguageExtensions.html#introduction
 
 
-
-// Memory
-#define KILOBYTES(x) (         (x) * 1024ULL)
-#define MEGABYTES(x) (KILOBYTES(x) * 1024ULL)
-#define GIGABYTES(x) (MEGABYTES(x) * 1024ULL)
-#define TERABYTES(x) (GIGABYTES(x) * 1024ULL)
-
 // NOTE(ted): Mac OSX uses bottom-up coordinate system.
 
 struct Game

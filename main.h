@@ -53,6 +53,12 @@ typedef int64_t s64;
 typedef float  f32;
 typedef double f64;
 
+// Memory
+#define KILOBYTES(x) (         (x) * 1024ULL)
+#define MEGABYTES(x) (KILOBYTES(x) * 1024ULL)
+#define GIGABYTES(x) (MEGABYTES(x) * 1024ULL)
+#define TERABYTES(x) (GIGABYTES(x) * 1024ULL)
+
 
 struct Buffer
 {
@@ -73,7 +79,13 @@ struct Memory
 
 struct Pixel
 {
+#if defined(__APPLE__) && defined(__MACH__)
     u8 r, g, b, a;
+#elif defined(_WIN32) || defined(_WIN64)
+    u8 b, g, r, a;
+#else
+    #error "Your operating system is not supported."
+#endif
 };
 
 struct FrameBuffer
