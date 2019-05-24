@@ -26,7 +26,11 @@ struct Win32Game
 
 static Win32FrameBuffer win32_framebuffer;
 static Win32Game win32_game;
+static KeyBoard keyboard;
 
+// TODO(ted): Pre-allocate the maximum size at startup. The user should always be able
+// to resize to the maximum size, so if we pre-allocate we know that the game won't
+// crash at resize due to memory. It'll also simplify the code and make it more efficient.
 static void Win32ResizeFrameBuffer(Win32FrameBuffer& buffer, int width, int height)
 {
 	if (buffer.memory)
@@ -53,7 +57,7 @@ static void Win32ResizeFrameBuffer(Win32FrameBuffer& buffer, int width, int heig
 	buffer.memory = VirtualAlloc(0, memory_size, MEM_COMMIT, PAGE_READWRITE);
 }
 
-static void Win32UpdateWindow(HWND window, Win32FrameBuffer buffer)
+static void Win32UpdateWindow(HWND window, Win32FrameBuffer& buffer)
 {
 	RECT client_rect;
 	GetClientRect(window, &client_rect);
@@ -75,10 +79,14 @@ static void Win32UpdateWindow(HWND window, Win32FrameBuffer buffer)
 	EndPaint(window, &paint);
 }
 
-
-LRESULT CALLBACK Win32EventCallback(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK Win32EventCallback(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	if (message == WM_SIZE)
+	if (message == WM_CHAR)
+	{
+		Key& key = keyboard.keys[keyboard.used++];
+	    key.character = cast(wParam, s8);
+	}
+	else if (message == WM_SIZE)
 	{
 		RECT client_rect;
 		GetClientRect(window, &client_rect);
@@ -91,6 +99,7 @@ LRESULT CALLBACK Win32EventCallback(HWND window, UINT message, WPARAM wParam, LP
 	}
 	else if (message == WM_PAINT)  // We repaint continuously.
 	{
+		Win32UpdateWindow(window, win32_framebuffer);
 		return 0;
 	}
 	else if (message == WM_CLOSE)
@@ -110,8 +119,7 @@ LRESULT CALLBACK Win32EventCallback(HWND window, UINT message, WPARAM wParam, LP
 	return DefWindowProc(window, message, wParam, lParam);
 }
 
-
-void Win32LoadGame(Win32Game& game)
+static void Win32LoadGame(Win32Game& game)
 {
 	HMODULE game_handle = LoadLibrary(L"main.dll");
 	if (!game_handle)
@@ -165,16 +173,32 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE _, PWSTR command_line_argument
 
     if (!window)
     {
-        return 0;
+        return -1;
     }
 
     ShowWindow(window, show_code);
 
+    LPVOID start_up_location = (LPVOID)TERABYTES(2);
+    SIZE_T memory_size = MEGABYTES(4);
+    u8* raw_memory = cast(VirtualAlloc(start_up_location, memory_size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE), u8*);
+
+	Memory memory = {0};
+	memory.persistent.size = memory_size / 2;
+	memory.persistent.used = 0;
+	memory.persistent.data = raw_memory;
+	memory.temporary.size = memory_size / 2;
+	memory.temporary.used = 0;
+	memory.temporary.data = raw_memory + memory_size / 2;
+	memory.initialized = false;
+
     Win32LoadGame(win32_game);
+
+    win32_game.initialize(memory);
 
 	bool running = true;
 	while (running)
 	{
+		keyboard.used = 0;
 		MSG message = {};
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
 		{
@@ -183,33 +207,17 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE _, PWSTR command_line_argument
 
 			TranslateMessage(&message);
 			DispatchMessage(&message);
-
-
-			Memory memory = {0};
-			memory.persistent.size = 1024;
-			memory.persistent.used = 0;
-			memory.persistent.data = malloc(1024);
-			memory.temporary.size = 1024;
-			memory.temporary.used = 0;
-			memory.temporary.data = malloc(1024);
-    		memory.initialized = false;
-
-			FrameBuffer framebuffer = {0};
-			framebuffer.width  = win32_framebuffer.width;
-			framebuffer.height = win32_framebuffer.height;
-			framebuffer.pixels = (Pixel*)win32_framebuffer.memory;
-
-			KeyBoard keyboard = {0};
-			keyboard.used = 0;
-			keyboard.keys;
-
-			win32_game.update(memory, framebuffer, keyboard);
-
-			Win32UpdateWindow(window, win32_framebuffer);
-
-			free(memory.persistent.data);
-			free(memory.temporary.data);
 		}
+
+
+		FrameBuffer framebuffer = {0};
+		framebuffer.width  = win32_framebuffer.width;
+		framebuffer.height = win32_framebuffer.height;
+		framebuffer.pixels = cast(win32_framebuffer.memory, Pixel*);
+
+		win32_game.update(memory, framebuffer, keyboard);
+
+		Win32UpdateWindow(window, win32_framebuffer);
 	}
 
     return 0;
