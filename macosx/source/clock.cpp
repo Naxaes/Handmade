@@ -20,7 +20,7 @@
 struct NanoClock
 {
     u64 last_time;
-    mach_timebase_info_data_t info;
+    mach_timebase_info_data_t info;  // @TODO(ted): This should be a global variable! Set it with a 'InitializeTimeModule' function.
 
     NanoClock()
     {
@@ -29,7 +29,7 @@ struct NanoClock
     }
 };
 
-u64 Sleep(NanoClock clock, u64 time)
+u64 Sleep(NanoClock clock, u64 time)  // @TODO(ted): This doesn't need 'clock'.
 {
     struct timespec remaining_sleep_time;
     struct timespec sleep_time;
